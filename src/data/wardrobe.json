@@ -1,0 +1,54 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "Chirag123",
+      "email": "chirag@example.com",
+      "wardrobe": {
+        "upper": [
+          {
+            "id": 1,
+            "name": "Black T-Shirt",
+            "image": null,
+            "category": "upper",
+            "dateAdded": "2024-01-15"
+          }
+        ],
+        "lower": [
+          {
+            "id": 2,
+            "name": "Blue Jeans",
+            "image": null,
+            "category": "lower",
+            "dateAdded": "2024-01-15"
+          }
+        ],
+        "bottom": [
+          {
+            "id": 3,
+            "name": "White Sneakers",
+            "image": null,
+            "category": "bottom",
+            "dateAdded": "2024-01-15"
+          }
+        ],
+        "accessories": []
+      },
+      "outfits": [
+        {
+          "id": 1,
+          "name": "Casual Look",
+          "items": [1, 2, 3],
+          "dateCreated": "2024-01-15"
+        }
+      ],
+      "favorites": [1, 2]
+    }
+  ],
+  "categories": [
+    "upper",
+    "lower", 
+    "bottom",
+    "accessories"
+  ]
+}

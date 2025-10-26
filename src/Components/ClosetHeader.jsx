@@ -62,14 +62,14 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
           style={{ color: "#8b5cf6" }}
           title="Add Item"
         >
-          <i className="fa-solid fa-plus text-3xl font-bold" />
+          <i className="fa-solid fa-plus-circle text-3xl font-bold" />
         </button>
         <button 
           className="p-3 transition hover:scale-110"
           style={{ color: "#8b5cf6" }}
           title="View Grid"
         >
-          <i className="fa-solid fa-th text-3xl font-bold" />
+          <i className="fa-solid fa-th-large text-3xl font-bold" />
         </button>
         
         {/* Profile Dropdown */}

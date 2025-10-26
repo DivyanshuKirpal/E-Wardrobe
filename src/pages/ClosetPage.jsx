@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ClosetHeader from "../Components/ClosetHeader.jsx";
 import UploadButton from "../Components/UploadButton.jsx";
+import wardrobeDB from "../services/wardrobeDB.js";
 
 const ClosetPage = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -11,6 +12,18 @@ const ClosetPage = ({ onLogout }) => {
   const [upperItems, setUpperItems] = useState([]);
   const [lowerItems, setLowerItems] = useState([]);
   const [bottomItems, setBottomItems] = useState([]);
+  const [accessoriesItems, setAccessoriesItems] = useState([]);
+
+  // Load data from database on component mount
+  useEffect(() => {
+    const username = "Chirag123"; // In a real app, this would come from auth context
+    
+    // Load items from database
+    setUpperItems(wardrobeDB.getWardrobeItems(username, 'upper'));
+    setLowerItems(wardrobeDB.getWardrobeItems(username, 'lower'));
+    setBottomItems(wardrobeDB.getWardrobeItems(username, 'bottom'));
+    setAccessoriesItems(wardrobeDB.getWardrobeItems(username, 'accessories'));
+  }, []);
 
   const handleUploadCloth = (e) => {
     const file = e.target.files[0];
@@ -30,18 +43,23 @@ const ClosetPage = ({ onLogout }) => {
         const reader = new FileReader();
         reader.onload = (event) => {
           const imageUrl = event.target.result;
-          const newItem = {
-            id: Date.now(),
-            name: `Item ${category} ${(category === 'upper' ? upperItems : category === 'lower' ? lowerItems : bottomItems).length + 1}`,
+          const username = "Chirag123"; // In a real app, this would come from auth context
+          
+          // Add item to database
+          const newItem = wardrobeDB.addItemToWardrobe(username, category, {
+            name: `Item ${category} ${(category === 'upper' ? upperItems : category === 'lower' ? lowerItems : category === 'bottom' ? bottomItems : accessoriesItems).length + 1}`,
             image: imageUrl
-          };
+          });
 
+          // Update local state
           if (category === 'upper') {
             setUpperItems([...upperItems, newItem]);
           } else if (category === 'lower') {
             setLowerItems([...lowerItems, newItem]);
           } else if (category === 'bottom') {
             setBottomItems([...bottomItems, newItem]);
+          } else if (category === 'accessories') {
+            setAccessoriesItems([...accessoriesItems, newItem]);
           }
         };
         reader.readAsDataURL(file);
@@ -257,11 +275,11 @@ const ClosetPage = ({ onLogout }) => {
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </div>
 
             {/* Accessories Section */}
             <div className="flex-shrink-0">
@@ -271,7 +289,7 @@ const ClosetPage = ({ onLogout }) => {
               <div className="flex space-x-3 overflow-x-auto pb-2 scroll-smooth h-40">
                 <div className="flex space-x-3">
                   <button 
-                    onClick={() => console.log("Add accessory")}
+                    onClick={() => handleAddItem('accessories')}
                     className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" 
                     style={{ backgroundColor: "#CFC8F3" }}
                   >
@@ -280,6 +298,20 @@ const ClosetPage = ({ onLogout }) => {
                       <p className="text-xs font-semibold" style={{ color: "#8b5cf6" }}>+ add item</p>
                     </div>
                   </button>
+                  {accessoriesItems.map(item => (
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing relative" style={{ backgroundColor: "#CFC8F3" }}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          <div className="text-center">
+                            <i className="fa-solid fa-jewelry text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                            <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
