@@ -68,7 +68,7 @@ const ClosetPage = ({ onLogout }) => {
             style={{ backgroundColor: "rgba(139, 92, 246, 0.2)" }}
             onClick={() => setIsSidebarOpen(false)}
           />
-          <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
+          <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
             <div className="flex flex-col h-full">
               {/* Close Button */}
               <button
@@ -134,7 +134,8 @@ const ClosetPage = ({ onLogout }) => {
       )}
 
       {/* Main Body */}
-      <div className="flex w-full h-[calc(100vh-4rem)] pt-16 items-center justify-center max-w-screen-2xl mx-auto">
+      <div className="flex w-full h-[calc(100vh-4rem)] pt-16 items-center justify-center">
+        <div className="flex w-full h-full items-center justify-center px-8">
         {/* Left Panel: 3D Character */}
         <div className="w-1/3 h-full flex items-center justify-center p-6">
           <div className="relative w-full h-[90%] rounded-3xl overflow-hidden shadow-2xl" style={{ backgroundColor: "#f5f0ff" }}>
@@ -256,11 +257,11 @@ const ClosetPage = ({ onLogout }) => {
                           </div>
                         </div>
                       )}
-                    </div>
-                  ))}
-                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
             {/* Accessories Section */}
             <div className="flex-shrink-0">
@@ -283,6 +284,7 @@ const ClosetPage = ({ onLogout }) => {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

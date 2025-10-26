@@ -32,7 +32,7 @@ const FavoritesPage = ({ onLogout }) => {
             style={{ backgroundColor: "rgba(139, 92, 246, 0.2)" }}
             onClick={() => setIsSidebarOpen(false)}
           />
-          <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-2xl z-50">
+          <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white shadow-2xl z-50">
             <div className="flex flex-col h-full">
               <button
                 onClick={() => setIsSidebarOpen(false)}

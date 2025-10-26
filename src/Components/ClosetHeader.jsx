@@ -22,7 +22,8 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
       {/* Left: 3-Line Menu Button */}
       <button
         onClick={onMenuClick}
-        className="text-purple-500 hover:text-purple-700 transition p-2"
+        className="p-2 rounded-lg hover:bg-purple-100 transition"
+        style={{ color: "#8b5cf6" }}
       >
         <i className="fa-solid fa-bars text-2xl" />
       </button>
