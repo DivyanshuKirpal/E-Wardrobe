@@ -57,13 +57,15 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
       {/* Right: Icons */}
       <div className="flex items-center space-x-4">
         <button 
-          className="text-purple-500 hover:text-purple-700 transition p-2"
+          className="p-3 rounded-lg hover:bg-purple-100 transition"
+          style={{ color: "#8b5cf6" }}
           title="Add Item"
         >
           <i className="fa-solid fa-plus text-2xl" />
         </button>
         <button 
-          className="text-purple-500 hover:text-purple-700 transition p-2"
+          className="p-3 rounded-lg hover:bg-purple-100 transition"
+          style={{ color: "#8b5cf6" }}
           title="View Grid"
         >
           <i className="fa-solid fa-table-cells text-2xl" />
@@ -76,7 +78,7 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
             className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-300 hover:border-purple-500 transition cursor-pointer"
           >
             <img
-              src="https://storage.googleapis.com/uxpilot-auth.appspot.com/1faabd44ba-ddc53d17129113ffc953.png"
+              src="https://i.pinimg.com/736x/8b/e6/a5/8be6a536d461d8462d3e1b72f3e7b1e3.jpg"
               alt="Profile"
               className="w-full h-full object-cover"
             />

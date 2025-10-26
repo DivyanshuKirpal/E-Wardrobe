@@ -6,11 +6,31 @@ import UploadButton from "../Components/UploadButton.jsx";
 const ClosetPage = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  
+  // State for items in each category
+  const [upperItems, setUpperItems] = useState([]);
+  const [lowerItems, setLowerItems] = useState([]);
+  const [bottomItems, setBottomItems] = useState([]);
 
   const handleUploadCloth = (e) => {
     const file = e.target.files[0];
     if (file) {
       console.log("Uploaded cloth:", file.name);
+    }
+  };
+
+  const handleAddItem = (category) => {
+    const newItem = {
+      id: Date.now(),
+      name: `Item ${category} ${(category === 'upper' ? upperItems : category === 'lower' ? lowerItems : bottomItems).length + 1}`
+    };
+
+    if (category === 'upper') {
+      setUpperItems([...upperItems, newItem]);
+    } else if (category === 'lower') {
+      setLowerItems([...lowerItems, newItem]);
+    } else if (category === 'bottom') {
+      setBottomItems([...bottomItems, newItem]);
     }
   };
 
@@ -106,12 +126,12 @@ const ClosetPage = ({ onLogout }) => {
               style={{ backgroundColor: "#8b5cf6", opacity: 0.15 }}
             />
             <div className="relative h-full flex items-center justify-center">
-              <img
-                src="https://storage.googleapis.com/uxpilot-auth.appspot.com/1faabd44ba-ddc53d17129113ffc953.png"
-                alt="3D Character"
-                className="w-full h-full object-contain drop-shadow-2xl"
-                style={{ filter: "drop-shadow(0 20px 60px rgba(139, 92, 246, 0.3))" }}
-              />
+            <img
+              src="https://i.pinimg.com/736x/8b/e6/a5/8be6a536d461d8462d3e1b72f3e7b1e3.jpg"
+              alt="Character"
+              className="w-full h-full object-contain drop-shadow-2xl"
+              style={{ filter: "drop-shadow(0 20px 60px rgba(139, 92, 246, 0.3))" }}
+            />
             </div>
           </div>
         </div>
@@ -119,22 +139,29 @@ const ClosetPage = ({ onLogout }) => {
         {/* Right Panel: Scrollable Sections */}
         <div className="w-2/3 h-full p-6">
           {/* Container for all sections */}
-          <div className="h-full flex flex-col gap-6">
+          <div className="h-full flex flex-col gap-4">
             {/* Upper Section */}
             <div className="flex-shrink-0">
-              <h2 className="text-2xl font-bold mb-3" style={{ color: "#8b5cf6" }}>
+              <h2 className="text-xl font-bold mb-2" style={{ color: "#8b5cf6" }}>
                 Upper
               </h2>
-              <div className="flex space-x-4 overflow-x-auto pb-2 scroll-smooth h-72">
-                <div className="flex space-x-4">
-                  <div className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" style={{ backgroundColor: "#CFC8F3" }}>
-                    <i className="fa-solid fa-plus text-4xl" style={{ color: "#8b5cf6" }} />
-                  </div>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center">
-                        <i className="fa-solid fa-tshirt text-5xl mb-2" style={{ color: "#8b5cf6" }} />
-                        <p className="text-sm font-semibold" style={{ color: "#8b5cf6" }}>Item {i}</p>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scroll-smooth h-40">
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => handleAddItem('upper')}
+                    className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" 
+                    style={{ backgroundColor: "#CFC8F3" }}
+                  >
+                    <div className="text-center">
+                      <i className="fa-solid fa-plus text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                      <p className="text-xs font-semibold" style={{ color: "#8b5cf6" }}>+ add item</p>
+                    </div>
+                  </button>
+                  {upperItems.map(item => (
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
+                      <div className="text-center p-2">
+                        <i className="fa-solid fa-tshirt text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
                       </div>
                     </div>
                   ))}
@@ -144,19 +171,26 @@ const ClosetPage = ({ onLogout }) => {
 
             {/* Lower Section */}
             <div className="flex-shrink-0">
-              <h2 className="text-2xl font-bold mb-3" style={{ color: "#8b5cf6" }}>
+              <h2 className="text-xl font-bold mb-2" style={{ color: "#8b5cf6" }}>
                 Lower
               </h2>
-              <div className="flex space-x-4 overflow-x-auto pb-2 scroll-smooth h-72">
-                <div className="flex space-x-4">
-                  <div className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" style={{ backgroundColor: "#CFC8F3" }}>
-                    <i className="fa-solid fa-plus text-4xl" style={{ color: "#8b5cf6" }} />
-                  </div>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center">
-                        <i className="fa-solid fa-socks text-5xl mb-2" style={{ color: "#8b5cf6" }} />
-                        <p className="text-sm font-semibold" style={{ color: "#8b5cf6" }}>Item {i}</p>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scroll-smooth h-40">
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => handleAddItem('lower')}
+                    className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" 
+                    style={{ backgroundColor: "#CFC8F3" }}
+                  >
+                    <div className="text-center">
+                      <i className="fa-solid fa-plus text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                      <p className="text-xs font-semibold" style={{ color: "#8b5cf6" }}>+ add item</p>
+                    </div>
+                  </button>
+                  {lowerItems.map(item => (
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
+                      <div className="text-center p-2">
+                        <i className="fa-solid fa-socks text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
                       </div>
                     </div>
                   ))}
@@ -166,22 +200,50 @@ const ClosetPage = ({ onLogout }) => {
 
             {/* Bottom Section */}
             <div className="flex-shrink-0">
-              <h2 className="text-2xl font-bold mb-3" style={{ color: "#8b5cf6" }}>
+              <h2 className="text-xl font-bold mb-2" style={{ color: "#8b5cf6" }}>
                 Bottom
               </h2>
-              <div className="flex space-x-4 overflow-x-auto pb-2 scroll-smooth h-72">
-                <div className="flex space-x-4">
-                  <div className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" style={{ backgroundColor: "#CFC8F3" }}>
-                    <i className="fa-solid fa-plus text-4xl" style={{ color: "#8b5cf6" }} />
-                  </div>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="w-48 h-64 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center">
-                        <i className="fa-solid fa-shoe-prints text-5xl mb-2" style={{ color: "#8b5cf6" }} />
-                        <p className="text-sm font-semibold" style={{ color: "#8b5cf6" }}>Item {i}</p>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scroll-smooth h-40">
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => handleAddItem('bottom')}
+                    className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" 
+                    style={{ backgroundColor: "#CFC8F3" }}
+                  >
+                    <div className="text-center">
+                      <i className="fa-solid fa-plus text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                      <p className="text-xs font-semibold" style={{ color: "#8b5cf6" }}>+ add item</p>
+                    </div>
+                  </button>
+                  {bottomItems.map(item => (
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
+                      <div className="text-center p-2">
+                        <i className="fa-solid fa-shoe-prints text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Accessories Section */}
+            <div className="flex-shrink-0">
+              <h2 className="text-xl font-bold mb-2" style={{ color: "#8b5cf6" }}>
+                Accessories
+              </h2>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scroll-smooth h-40">
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => console.log("Add accessory")}
+                    className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-pointer hover:scale-105" 
+                    style={{ backgroundColor: "#CFC8F3" }}
+                  >
+                    <div className="text-center">
+                      <i className="fa-solid fa-plus text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                      <p className="text-xs font-semibold" style={{ color: "#8b5cf6" }}>+ add item</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
