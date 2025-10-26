@@ -1,35 +1,38 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from "react";
+import LandingPage from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/pages/LandingPage.jsx";
+import ClosetPage from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/pages/ClosetPage.jsx";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentPage, setCurrentPage] = useState('landing');
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setCurrentPage('closet');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentPage('landing');
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="App">
+      {currentPage === 'landing' ? (
+        <LandingPage 
+          isLoggedIn={isLoggedIn} 
+          onLogin={handleLogin} 
+          onLogout={handleLogout} 
+        />
+      ) : (
+        <ClosetPage 
+          isLoggedIn={isLoggedIn} 
+          onLogout={handleLogout}
+          onBackToLanding={() => setCurrentPage('landing')}
+        />
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
