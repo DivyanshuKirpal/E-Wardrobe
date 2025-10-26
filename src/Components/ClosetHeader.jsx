@@ -22,10 +22,10 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
       {/* Left: 3-Line Menu Button */}
       <button
         onClick={onMenuClick}
-        className="p-2 rounded-lg transition hover:scale-110"
-        style={{ backgroundColor: "#CFC8F3", color: "#8b5cf6" }}
+        className="p-3 transition hover:scale-110"
+        style={{ color: "#8b5cf6" }}
       >
-        <i className="fa-solid fa-bars text-2xl" />
+        <i className="fa-solid fa-bars text-3xl font-bold" />
       </button>
 
       {/* Center: Logo + Search */}
@@ -58,18 +58,18 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
       {/* Right: Icons */}
       <div className="flex items-center space-x-2">
         <button 
-          className="p-2 rounded-lg transition hover:scale-110 hover:shadow-md"
-          style={{ backgroundColor: "#CFC8F3", color: "#8b5cf6" }}
+          className="p-3 transition hover:scale-110"
+          style={{ color: "#8b5cf6" }}
           title="Add Item"
         >
-          <i className="fa-solid fa-plus text-xl" />
+          <i className="fa-solid fa-plus text-3xl font-bold" />
         </button>
         <button 
-          className="p-2 rounded-lg transition hover:scale-110 hover:shadow-md"
-          style={{ backgroundColor: "#CFC8F3", color: "#8b5cf6" }}
+          className="p-3 transition hover:scale-110"
+          style={{ color: "#8b5cf6" }}
           title="View Grid"
         >
-          <i className="fa-solid fa-table-cells text-xl" />
+          <i className="fa-solid fa-th text-3xl font-bold" />
         </button>
         
         {/* Profile Dropdown */}
