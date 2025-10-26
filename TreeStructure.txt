@@ -1,0 +1,36 @@
+e-wardrobe/
+│
+├── public/
+│   └── favicon.ico
+│
+├── src/
+│   ├── assets/
+│   │   ├── images/
+│   │   │   └── avatar.png
+│   │   └── icons/
+│   │
+│   ├── components/
+│   │   ├── Header.jsx
+│   │   ├── HeroSection.jsx
+│   │   └── ClosetGrid.jsx   ← your future closet layout
+│   │
+│   ├── pages/
+│   │   ├── LandingPage.jsx  ← main home page (uses Header + HeroSection)
+│   │   └── ClosetPage.jsx   ← avatar + wardrobe grid
+│   │
+│   ├── context/
+│   │   └── AppContext.jsx   ← for auth, theme, user wardrobe state
+│   │
+│   ├── utils/
+│   │   └── api.js           ← later for backend/API functions
+│   │
+│   ├── styles/
+│   │   └── global.css       ← your Tailwind base imports
+│   │
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+│
+├── .gitignore
+├── package.json
+└── vite.config.js
