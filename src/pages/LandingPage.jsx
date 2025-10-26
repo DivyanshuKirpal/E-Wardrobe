@@ -2,11 +2,20 @@ import React from "react";
 import Header from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/Header.jsx";
 import StatsSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/StatsSection.jsx";
 import FeaturesSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/FeaturesSection.jsx";
+import HowItWorksSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/HowItWorksSection.jsx";
+import TestimonialsSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/TestimonialsSection.jsx";
+import PricingSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/PricingSection.jsx";
+import Footer from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/Footer.jsx";
 
-const LandingPage = ({ isLoggedIn, onLogin, onLogout }) => {
+const LandingPage = ({ isLoggedIn, onLogin, onLogout, onNavigateToCloset }) => {
   return (
     <>
-      <Header isLoggedIn={isLoggedIn} onLogin={onLogin} onLogout={onLogout} />
+      <Header 
+        isLoggedIn={isLoggedIn} 
+        onLogin={onLogin} 
+        onLogout={onLogout}
+        onNavigateToCloset={onNavigateToCloset}
+      />
 
       <section
         id="hero"
@@ -66,6 +75,10 @@ const LandingPage = ({ isLoggedIn, onLogin, onLogout }) => {
 
       <StatsSection />
       <FeaturesSection />
+      <HowItWorksSection />
+      <TestimonialsSection />
+      <PricingSection />
+      <Footer />
     </>
   );
 };

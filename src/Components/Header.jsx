@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import LoginModal from "./LoginModal";
 
-const Header = ({ isLoggedIn, onLogin, onLogout }) => {
+const Header = ({ isLoggedIn, onLogin, onLogout, onNavigateToCloset }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleLogin = (success) => {
     if (success) {
       onLogin();
+    }
+  };
+
+  const handleClosetClick = () => {
+    if (onNavigateToCloset) {
+      onNavigateToCloset();
     }
   };
 
@@ -46,7 +52,10 @@ const Header = ({ isLoggedIn, onLogin, onLogout }) => {
                 >
                   Logout
                 </button>
-                <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                <button 
+                  onClick={handleClosetClick}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
                   My Closet
                 </button>
               </>

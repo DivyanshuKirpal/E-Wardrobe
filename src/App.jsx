@@ -16,13 +16,20 @@ function App() {
     setCurrentPage('landing');
   };
 
+  const handleNavigateToCloset = () => {
+    if (isLoggedIn) {
+      setCurrentPage('closet');
+    }
+  };
+
   return (
     <div className="App">
       {currentPage === 'landing' ? (
         <LandingPage 
           isLoggedIn={isLoggedIn} 
           onLogin={handleLogin} 
-          onLogout={handleLogout} 
+          onLogout={handleLogout}
+          onNavigateToCloset={handleNavigateToCloset}
         />
       ) : (
         <ClosetPage 
