@@ -1,44 +1,73 @@
 import React, { useState } from "react";
-import LandingPage from "./pages/LandingPage";
-import ClosetPage from "./pages/ClosetPage";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+import LandingPage from "./pages/LandingPage.jsx";
+import ClosetPage from "./pages/ClosetPage.jsx";
+import FavoritesPage from "./pages/FavoritesPage.jsx";
+import StatsPage from "./pages/StatsPage.jsx";
+import OutfitsPage from "./pages/OutfitPage.jsx";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPage, setCurrentPage] = useState('landing');
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setCurrentPage('closet');
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentPage('landing');
-  };
-
-  const handleNavigateToCloset = () => {
-    if (isLoggedIn) {
-      setCurrentPage('closet');
-    }
-  };
+  const handleLogin = () => setIsLoggedIn(true);
+  const handleLogout = () => setIsLoggedIn(false);
 
   return (
-    <div className="App">
-      {currentPage === 'landing' ? (
-        <LandingPage 
-          isLoggedIn={isLoggedIn} 
-          onLogin={handleLogin} 
-          onLogout={handleLogout}
-          onNavigateToCloset={handleNavigateToCloset}
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <LandingPage
+              isLoggedIn={isLoggedIn}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+            />
+          }
         />
-      ) : (
-        <ClosetPage 
-          isLoggedIn={isLoggedIn} 
-          onLogout={handleLogout}
-          onBackToLanding={() => setCurrentPage('landing')}
+        <Route
+          path="/closet"
+          element={
+            isLoggedIn ? (
+              <ClosetPage onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
         />
-      )}
-    </div>
+        <Route
+          path="/favorites"
+          element={
+            isLoggedIn ? (
+              <FavoritesPage onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            isLoggedIn ? (
+              <StatsPage onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/outfits"
+          element={
+            isLoggedIn ? (
+              <OutfitsPage onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
