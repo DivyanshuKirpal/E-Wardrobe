@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import LandingPage from "./pages/LandingPage.jsx";
-import ClosetPage from "./pages/ClosetPage.jsx";
+import LandingPage from "./pages/LandingPage";
+import ClosetPage from "./pages/ClosetPage";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
