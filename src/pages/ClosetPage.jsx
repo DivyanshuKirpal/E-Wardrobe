@@ -20,18 +20,34 @@ const ClosetPage = ({ onLogout }) => {
   };
 
   const handleAddItem = (category) => {
-    const newItem = {
-      id: Date.now(),
-      name: `Item ${category} ${(category === 'upper' ? upperItems : category === 'lower' ? lowerItems : bottomItems).length + 1}`
-    };
+    // Create a hidden file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imageUrl = event.target.result;
+          const newItem = {
+            id: Date.now(),
+            name: `Item ${category} ${(category === 'upper' ? upperItems : category === 'lower' ? lowerItems : bottomItems).length + 1}`,
+            image: imageUrl
+          };
 
-    if (category === 'upper') {
-      setUpperItems([...upperItems, newItem]);
-    } else if (category === 'lower') {
-      setLowerItems([...lowerItems, newItem]);
-    } else if (category === 'bottom') {
-      setBottomItems([...bottomItems, newItem]);
-    }
+          if (category === 'upper') {
+            setUpperItems([...upperItems, newItem]);
+          } else if (category === 'lower') {
+            setLowerItems([...lowerItems, newItem]);
+          } else if (category === 'bottom') {
+            setBottomItems([...bottomItems, newItem]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -48,7 +64,8 @@ const ClosetPage = ({ onLogout }) => {
       {isSidebarOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 z-40 backdrop-blur-sm"
+            style={{ backgroundColor: "rgba(139, 92, 246, 0.2)" }}
             onClick={() => setIsSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
@@ -117,7 +134,7 @@ const ClosetPage = ({ onLogout }) => {
       )}
 
       {/* Main Body */}
-      <div className="flex w-full h-[calc(100vh-4rem)] pt-16 items-center justify-center">
+      <div className="flex w-full h-[calc(100vh-4rem)] pt-16 items-center justify-center max-w-screen-2xl mx-auto">
         {/* Left Panel: 3D Character */}
         <div className="w-1/3 h-full flex items-center justify-center p-6">
           <div className="relative w-full h-[90%] rounded-3xl overflow-hidden shadow-2xl" style={{ backgroundColor: "#f5f0ff" }}>
@@ -158,11 +175,17 @@ const ClosetPage = ({ onLogout }) => {
                     </div>
                   </button>
                   {upperItems.map(item => (
-                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center p-2">
-                        <i className="fa-solid fa-tshirt text-3xl mb-1" style={{ color: "#8b5cf6" }} />
-                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
-                      </div>
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing relative" style={{ backgroundColor: "#CFC8F3" }}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          <div className="text-center">
+                            <i className="fa-solid fa-tshirt text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                            <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -187,11 +210,17 @@ const ClosetPage = ({ onLogout }) => {
                     </div>
                   </button>
                   {lowerItems.map(item => (
-                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center p-2">
-                        <i className="fa-solid fa-socks text-3xl mb-1" style={{ color: "#8b5cf6" }} />
-                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
-                      </div>
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing relative" style={{ backgroundColor: "#CFC8F3" }}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          <div className="text-center">
+                            <i className="fa-solid fa-socks text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                            <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -216,11 +245,17 @@ const ClosetPage = ({ onLogout }) => {
                     </div>
                   </button>
                   {bottomItems.map(item => (
-                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing" style={{ backgroundColor: "#CFC8F3" }}>
-                      <div className="text-center p-2">
-                        <i className="fa-solid fa-shoe-prints text-3xl mb-1" style={{ color: "#8b5cf6" }} />
-                        <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
-                      </div>
+                    <div key={item.id} className="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition-all cursor-grab hover:scale-105 active:cursor-grabbing relative" style={{ backgroundColor: "#CFC8F3" }}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          <div className="text-center">
+                            <i className="fa-solid fa-shoe-prints text-3xl mb-1" style={{ color: "#8b5cf6" }} />
+                            <p className="text-xs font-semibold truncate" style={{ color: "#8b5cf6" }}>{item.name}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -28,7 +28,8 @@ const FavoritesPage = ({ onLogout }) => {
       {isSidebarOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 z-40 backdrop-blur-sm"
+            style={{ backgroundColor: "rgba(139, 92, 246, 0.2)" }}
             onClick={() => setIsSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-2xl z-50">
