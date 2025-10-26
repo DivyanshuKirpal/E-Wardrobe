@@ -1,11 +1,11 @@
 import React from "react";
-import Header from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/Header.jsx";
-import StatsSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/StatsSection.jsx";
-import FeaturesSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/FeaturesSection.jsx";
-import HowItWorksSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/HowItWorksSection.jsx";
-import TestimonialsSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/TestimonialsSection.jsx";
-import PricingSection from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/PricingSection.jsx";
-import Footer from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/Footer.jsx";
+import Header from "../Components/Header.jsx";
+import StatsSection from "../Components/StatsSection.jsx";
+import FeaturesSection from "../Components/FeaturesSection.jsx";
+import HowItWorksSection from "../Components/HowItWorksSection.jsx";
+import TestimonialsSection from "../Components/TestimonialsSection.jsx";
+import PricingSection from "../Components/PricingSection.jsx";
+import Footer from "../Components/Footer.jsx";
 
 const LandingPage = ({ isLoggedIn, onLogin, onLogout, onNavigateToCloset }) => {
   return (

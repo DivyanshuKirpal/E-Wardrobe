@@ -1,6 +1,6 @@
 import React from "react";
-import Header from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/Header.jsx";
-import ClosetGrid from "/Users/chiragdawra/Desktop/chitkara/coding /React/e-wardrobe/src/Components/ClosetGrid.jsx";
+import Header from "../Components/Header.jsx";
+import ClosetGrid from "../Components/ClosetGrid.jsx";
 
 const ClosetPage = ({ isLoggedIn, onLogout, onBackToLanding }) => {
   return (
