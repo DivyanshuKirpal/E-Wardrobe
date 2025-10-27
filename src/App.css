@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ... rest of your animations */
+
+
+/* Define keyframes outside of @layer */
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-20px) rotate(5deg); 
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-15px); 
+  }
+}
+
+@keyframes shimmer {
+  0% { 
+    transform: translateX(-100%); 
+  }
+  100% { 
+    transform: translateX(100%); 
+  }
+}
+
+@keyframes slide-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+/* Add animation utility classes in @layer utilities */
+@layer utilities {
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  
+  .animate-float-slow {
+    animation: float-slow 8s ease-in-out infinite;
+  }
+  
+  .animate-float-medium {
+    animation: float-medium 7s ease-in-out infinite;
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 3s linear infinite;
+  }
+  
+  .animate-slide-in {
+    animation: slide-in 1s ease-out;
+  }
+  
+  .animate-slide-in-delay {
+    animation: slide-in 1s ease-out 0.2s both;
+  }
+  
+  .animate-slide-in-delay-2 {
+    animation: slide-in 1s ease-out 0.2s both;
+  }
+  
+  .animate-slide-in-delay-3 {
+    animation: slide-in 1s ease-out 0.4s both;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
