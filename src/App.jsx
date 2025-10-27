@@ -9,14 +9,17 @@ import StatsPage from "./pages/StatsPage.jsx";
 import OutfitsPage from "./pages/OutfitPage.jsx";
 
 function App() {
+  // Track login state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Login/logout handlers
   const handleLogin = () => setIsLoggedIn(true);
   const handleLogout = () => setIsLoggedIn(false);
 
   return (
     <Router>
       <Routes>
+        {/* Landing page - public route */}
         <Route
           path="/"
           element={
@@ -27,6 +30,8 @@ function App() {
             />
           }
         />
+
+        {/* Protected routes - redirect to home if not logged in */}
         <Route
           path="/closet"
           element={
@@ -37,6 +42,7 @@ function App() {
             )
           }
         />
+        
         <Route
           path="/favorites"
           element={
@@ -47,6 +53,7 @@ function App() {
             )
           }
         />
+        
         <Route
           path="/stats"
           element={
@@ -57,6 +64,7 @@ function App() {
             )
           }
         />
+        
         <Route
           path="/outfits"
           element={
