@@ -7,6 +7,7 @@ import ClosetPage from "./pages/ClosetPage.jsx";
 import FavoritesPage from "./pages/FavoritesPage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
 import OutfitsPage from "./pages/OutfitPage.jsx";
+import JSBasicsDemo from "./pages/JSBasicsDemo.jsx";
 
 function App() {
   // Track login state
@@ -74,6 +75,10 @@ function App() {
               <Navigate to="/" replace />
             )
           }
+        />
+        <Route
+          path="/js-demo"
+          element={<JSBasicsDemo />}
         />
       </Routes>
     </Router>
