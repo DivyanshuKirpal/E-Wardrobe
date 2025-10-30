@@ -28,7 +28,7 @@ const ClosetPage = ({ onLogout }) => {
   }, []);
 
   const loadItems = () => {
-    const username = "Chirag123";
+    const username = "PID18";
     const upper = wardrobeDB.getWardrobeItems(username, 'upper');
     const lower = wardrobeDB.getWardrobeItems(username, 'lower');
     const bottom = wardrobeDB.getWardrobeItems(username, 'bottom');
@@ -112,7 +112,7 @@ const ClosetPage = ({ onLogout }) => {
 
   // Helper function to save to wardrobe
   const saveToWardrobe = (category, imageUrl, fileName) => {
-    const username = "Chirag123";
+    const username = "PID18";
     wardrobeDB.addItemToWardrobe(username, category, {
       name: `${category.charAt(0).toUpperCase() + category.slice(1)} - ${fileName}`,
       image: imageUrl,
@@ -142,7 +142,7 @@ const ClosetPage = ({ onLogout }) => {
     trashed.push({...item, trashedAt: new Date().toISOString()});
     localStorage.setItem("trashedItems", JSON.stringify(trashed));
     
-    const username = "Chirag123";
+    const username = "PID18";
     wardrobeDB.removeItemFromWardrobe(username, item.category, item.id);
     
     loadItems();
@@ -153,7 +153,7 @@ const ClosetPage = ({ onLogout }) => {
     const trashed = trashedItems.filter(t => t.id !== item.id);
     localStorage.setItem("trashedItems", JSON.stringify(trashed));
     
-    const username = "Chirag123";
+    const username = "PID18";
     const itemWithoutTrash = {...item};
     delete itemWithoutTrash.trashedAt;
     

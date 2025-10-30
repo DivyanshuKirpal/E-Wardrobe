@@ -95,7 +95,6 @@ const LandingPage = ({ isLoggedIn, onLogin, onLogout }) => {
       <StatsSection />
       <FeaturesSection />
       <HowItWorksSection />
-      <TestimonialsSection />
       <PricingSection />
       <Footer />
     </>
