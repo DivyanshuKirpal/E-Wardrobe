@@ -1,20 +1,38 @@
-import React, { useState } from "react";
+// src/Components/LoginModal.jsx
+import React, { useState, useContext } from "react";
+import { AppContext } from "../Context/AppContext";
 
-const LoginModal = ({ isOpen, onClose, onLogin }) => {
-  const [credentials, setCredentials] = useState({ username: "", password: "" });
+const LoginModal = ({ isOpen, onClose }) => {
+  const { setToken, setUser } = useContext(AppContext);
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Hardcoded credentials
-    if (credentials.username === "PID18" && credentials.password === "pass123") {
-      onLogin(true);
-      setCredentials({ username: "", password: "" });
-      setError("");
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: credentials.email, password: credentials.password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.msg || data.error || "Login failed");
+        return;
+      }
+      // Save token and user to context (and localStorage via AppContext effect)
+      setToken(data.token);
+      setUser(data.user);
+      setCredentials({ email: "", password: "" });
       onClose();
-    } else {
-      setError("Invalid username or password");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Network error — try again");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,14 +64,14 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-              Username
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
             </label>
             <input
-              type="text"
-              id="username"
-              name="username"
-              value={credentials.username}
+              type="email"
+              id="email"
+              name="email"
+              value={credentials.email}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
@@ -81,16 +99,17 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
           
           <button
             type="submit"
-            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-60"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <div className="mt-4 text-sm text-gray-600 text-center">
-          <strong>Demo Credentials:</strong><br />
-          Username: PID18<br />
-          Password: pass123
+          <strong>Demo credentials (dev only):</strong><br />
+          email: <em>chiragdawra46@gmail.com</em><br />
+          password: <em>password123</em>
         </div>
       </div>
     </div>
