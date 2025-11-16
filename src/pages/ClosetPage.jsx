@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import ClosetHeader from "../Components/ClosetHeader.jsx";
 import wardrobeDB from "../services/wardrobeDB.js";
 import HuggingFaceAPI from "../services/huggingFaceAPI.js";
+import { AppContext } from "../Context/AppContext";
+
+/**
+ * Notes:
+ * - This file uses AppContext (token, items, setItems, fetchItems).
+ * - saveToWardrobe will upload to server when token is present (and convert data URLs to Blobs).
+ * - If no token is present it falls back to local wardrobeDB (your original behaviour).
+ */
 
 const ClosetPage = ({ onLogout }) => {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
+  const { token, items: ctxItems, setItems, fetchItems } = useContext(AppContext);
+
+  // Local view copies / derived states
   const [trashedItems, setTrashedItems] = useState([]);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [selectedOutfitItems, setSelectedOutfitItems] = useState({
@@ -14,28 +24,22 @@ const ClosetPage = ({ onLogout }) => {
     lower: null,
     bottom: null
   });
-  
-  // State for AI processing
+
+  // AI processing state
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState("");
   const [showStyleModal, setShowStyleModal] = useState(false);
   const [styleResolver, setStyleResolver] = useState(null);
 
-  // Load items from database
+  // Keep a local items reference to maintain compatibility with existing code
+  const items = ctxItems || [];
+
+  // Load local trashed items on mount
   useEffect(() => {
-    loadItems();
     loadTrashedItems();
   }, []);
 
-  const loadItems = () => {
-    const username = "PID18";
-    const upper = wardrobeDB.getWardrobeItems(username, 'upper');
-    const lower = wardrobeDB.getWardrobeItems(username, 'lower');
-    const bottom = wardrobeDB.getWardrobeItems(username, 'bottom');
-    const accessories = wardrobeDB.getWardrobeItems(username, 'accessories');
-    
-    setItems([...upper, ...lower, ...bottom, ...accessories]);
-  };
+  // === Helpers ===
 
   const loadTrashedItems = () => {
     const trashed = JSON.parse(localStorage.getItem("trashedItems")) || [];
@@ -46,12 +50,164 @@ const ClosetPage = ({ onLogout }) => {
     navigate(`/${page}`);
   };
 
-  // Enhanced add item with AI processing
+  // Convert Data URL to Blob
+  const dataURLToBlob = (dataURL) => {
+    const [header, data] = dataURL.split(",");
+    const isBase64 = header.indexOf("base64") >= 0;
+    const mimeMatch = header.match(/data:([^;]+);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/png";
+    if (isBase64) {
+      const binary = atob(data);
+      const len = binary.length;
+      const arr = new Uint8Array(len);
+      for (let i = 0; i < len; i++) arr[i] = binary.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    } else {
+      // fallback for non-base64 data urls
+      const uint8 = new TextEncoder().encode(decodeURIComponent(data));
+      return new Blob([uint8], { type: mime });
+    }
+  };
+
+  // Upload blob/file to backend; returns created item object
+  const uploadToServer = async (fileOrBlob, filename, category = "") => {
+    if (!token) throw new Error("Not authenticated");
+    const form = new FormData();
+    // fileOrBlob may be a File already or a Blob; convert to File if needed
+    let fileToSend = fileOrBlob;
+    if (!(fileOrBlob instanceof File)) {
+      fileToSend = new File([fileOrBlob], filename || `upload-${Date.now()}.png`, { type: fileOrBlob.type || "image/png" });
+    }
+    form.append("image", fileToSend);
+    form.append("title", filename || fileToSend.name || "upload");
+    form.append("tags", category); // we reuse tags to store category lightly; server doesn't require but helps later
+    // also add category explicitly so we can set it on client after response
+    form.append("category", category);
+
+    const res = await fetch("http://localhost:5001/api/items", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: form,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.msg || data.error || "Upload failed");
+    }
+
+    // Ensure the returned item has a category for UI grouping (server model might not store it)
+    data.category = category;
+    return data;
+  };
+
+  // If token -> upload to backend; else fallback to wardrobeDB (local)
+  const saveToWardrobe = async (category, imageUrlOrDataURI, fileName) => {
+    // If logged in -> send to backend
+    if (token) {
+      try {
+        // If we were passed a File object earlier, we should handle that upstream.
+        // Here imageUrlOrDataURI could be:
+        // - a data URL (data:image/png;base64,...)
+        // - an external URL (https://...) — fetch and convert to blob
+        // - a plain image URL already on Cloudinary (we can attempt to create a minimal item locally)
+        if (typeof imageUrlOrDataURI === "string" && imageUrlOrDataURI.startsWith("data:")) {
+          // convert to blob
+          const blob = dataURLToBlob(imageUrlOrDataURI);
+          const uploaded = await uploadToServer(blob, fileName || "processed.png", category);
+          // Prepend to items locally
+          setItems(prev => [uploaded, ...(prev || [])]);
+          return uploaded;
+        } else if (typeof imageUrlOrDataURI === "string" && /^https?:\/\//i.test(imageUrlOrDataURI)) {
+          // fetch the image as blob then upload
+          try {
+            const resp = await fetch(imageUrlOrDataURI);
+            const blob = await resp.blob();
+            const uploaded = await uploadToServer(blob, fileName || "image.png", category);
+            setItems(prev => [uploaded, ...(prev || [])]);
+            return uploaded;
+          } catch (err) {
+            console.warn("failed to fetch external image, falling back to local save:", err);
+            // fallback: create local DB entry using the external url (not uploaded to server)
+            const localItem = {
+              id: Date.now(),
+              name: `${category} - ${fileName}`,
+              image: imageUrlOrDataURI,
+              category,
+            };
+            wardrobeDB.addItemToWardrobe("PID18", category, localItem);
+            // refresh local view (wardrobeDB)
+            // loadItems() -> replaced by fetchItems when logged in; but because we are logged in we prefer server flow
+            return localItem;
+          }
+        } else {
+          // unknown format - attempt to treat as already a File? fallback to local
+          const localItem = {
+            id: Date.now(),
+            name: `${category} - ${fileName || "file"}`,
+            image: imageUrlOrDataURI,
+            category,
+          };
+          wardrobeDB.addItemToWardrobe("PID18", category, localItem);
+          return localItem;
+        }
+      } catch (err) {
+        console.error("saveToWardrobe (server) failed:", err);
+        // fallback to local save
+        const localItem = {
+          id: Date.now(),
+          name: `${category} - ${fileName || "file"}`,
+          image: imageUrlOrDataURI,
+          category,
+        };
+        wardrobeDB.addItemToWardrobe("PID18", category, localItem);
+        return localItem;
+      }
+    } else {
+      // not authenticated -> local storage behaviour (existing)
+      const username = "PID18";
+      const entry = {
+        id: Date.now(),
+        name: `${category.charAt(0).toUpperCase() + category.slice(1)} - ${fileName}`,
+        image: imageUrlOrDataURI,
+        category,
+      };
+      wardrobeDB.addItemToWardrobe(username, category, entry);
+      // local state refresh
+      // Because we are not using fetchItems, update items by reading from wardrobeDB
+      // mimic original loadItems:
+      const upper = wardrobeDB.getWardrobeItems(username, 'upper');
+      const lower = wardrobeDB.getWardrobeItems(username, 'lower');
+      const bottom = wardrobeDB.getWardrobeItems(username, 'bottom');
+      const accessories = wardrobeDB.getWardrobeItems(username, 'accessories');
+      // replace local items via setItems (if you want to display local items in UI while logged out)
+      setItems([...upper, ...lower, ...bottom, ...accessories]);
+      return entry;
+    }
+  };
+
+  // Show style selection modal (returns promise)
+  const showStyleSelection = () => {
+    setShowStyleModal(true);
+    return new Promise((resolve) => {
+      setStyleResolver(() => resolve);
+    });
+  };
+
+  const handleStyleSelect = (style) => {
+    if (styleResolver) {
+      styleResolver(style);
+    }
+    setShowStyleModal(false);
+  };
+
+  // Enhanced add item with AI processing (reused your original flow)
   const handleAddItem = (category) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -59,14 +215,24 @@ const ClosetPage = ({ onLogout }) => {
       try {
         const reader = new FileReader();
         reader.onload = async (event) => {
-          const originalImage = event.target.result;
-
-          // Ask user for style
+          const originalImage = event.target.result; // data URL
           const styleChoice = await showStyleSelection();
 
-          if (styleChoice === 'original') {
-            // Save without processing
-            saveToWardrobe(category, originalImage, file.name);
+          if (styleChoice === "original") {
+            // If user is logged in, directly upload the original file
+            if (token) {
+              try {
+                const uploaded = await uploadToServer(file, file.name, category);
+                setItems(prev => [uploaded, ...(prev || [])]);
+              } catch (err) {
+                console.error("upload original failed:", err);
+                alert("Upload failed. Saving locally.");
+                saveToWardrobe(category, originalImage, file.name);
+              }
+            } else {
+              // fallback: save Data URL locally
+              saveToWardrobe(category, originalImage, file.name);
+            }
             return;
           }
 
@@ -74,27 +240,29 @@ const ClosetPage = ({ onLogout }) => {
           setIsProcessing(true);
           setProcessingProgress(`Converting to ${styleChoice}...`);
 
-          let processedImage;
+          let processedImageDataUrl;
           try {
             switch (styleChoice) {
-              case 'cartoon':
-                processedImage = await HuggingFaceAPI.transformToCartoon(file);
+              case "cartoon":
+                processedImageDataUrl = await HuggingFaceAPI.transformToCartoon(file);
                 break;
-              case 'anime':
-                processedImage = await HuggingFaceAPI.transformToAnime(file);
+              case "anime":
+                processedImageDataUrl = await HuggingFaceAPI.transformToAnime(file);
                 break;
-              case 'remove-bg':
-                processedImage = await HuggingFaceAPI.removeBackground(file);
+              case "remove-bg":
+                processedImageDataUrl = await HuggingFaceAPI.removeBackground(file);
                 break;
               default:
-                processedImage = originalImage;
+                processedImageDataUrl = originalImage;
             }
 
-            saveToWardrobe(category, processedImage, file.name);
+            // Save processedImageDataUrl (which is expected to be a data URL) to wardrobe (server or local)
+            const saved = await saveToWardrobe(category, processedImageDataUrl, file.name);
+            // If server upload happened, saved is the server item and already added to setItems inside saveToWardrobe
           } catch (error) {
             console.error("AI processing failed:", error);
             alert("AI processing failed. Saving original image instead.");
-            saveToWardrobe(category, originalImage, file.name);
+            await saveToWardrobe(category, originalImage, file.name);
           } finally {
             setIsProcessing(false);
             setProcessingProgress("");
@@ -106,74 +274,52 @@ const ClosetPage = ({ onLogout }) => {
         setIsProcessing(false);
       }
     };
-    
+
     input.click();
   };
 
-  // Helper function to save to wardrobe
-  const saveToWardrobe = (category, imageUrl, fileName) => {
-    const username = "PID18";
-    wardrobeDB.addItemToWardrobe(username, category, {
-      name: `${category.charAt(0).toUpperCase() + category.slice(1)} - ${fileName}`,
-      image: imageUrl,
-      category: category
-    });
-    loadItems();
-  };
-
-  // Show style selection modal
-  const showStyleSelection = () => {
-    setShowStyleModal(true);
-    return new Promise((resolve) => {
-      setStyleResolver(() => resolve);
-    });
-  };
-
-  // Handle style selection
-  const handleStyleSelect = (style) => {
-    if (styleResolver) {
-      styleResolver(style);
-    }
-    setShowStyleModal(false);
-  };
-
+  // Trash / restore / delete logic (uses localStorage/wardrobeDB like original)
   const handleMoveToTrash = (item) => {
     const trashed = JSON.parse(localStorage.getItem("trashedItems")) || [];
-    trashed.push({...item, trashedAt: new Date().toISOString()});
+    trashed.push({ ...item, trashedAt: new Date().toISOString() });
     localStorage.setItem("trashedItems", JSON.stringify(trashed));
-    
+
     const username = "PID18";
     wardrobeDB.removeItemFromWardrobe(username, item.category, item.id);
-    
-    loadItems();
+
+    // If we are authenticated and using server items, also remove locally from context
+    if (token) {
+      // remove item from context array
+      setItems(prev => prev.filter(it => (it._id || it.id) !== (item._id || item.id)));
+    } else {
+      // refresh local items
+      const upper = wardrobeDB.getWardrobeItems(username, "upper");
+      const lower = wardrobeDB.getWardrobeItems(username, "lower");
+      const bottom = wardrobeDB.getWardrobeItems(username, "bottom");
+      const accessories = wardrobeDB.getWardrobeItems(username, "accessories");
+      setItems([...upper, ...lower, ...bottom, ...accessories]);
+    }
+
     loadTrashedItems();
   };
 
   const handleRestoreItem = (item) => {
-    const trashed = trashedItems.filter(t => t.id !== item.id);
+    const trashed = trashedItems.filter((t) => t.id !== item.id);
     localStorage.setItem("trashedItems", JSON.stringify(trashed));
-    
+
     const username = "PID18";
-    const itemWithoutTrash = {...item};
+    const itemWithoutTrash = { ...item };
     delete itemWithoutTrash.trashedAt;
-    
+
     wardrobeDB.addItemToWardrobe(username, item.category, itemWithoutTrash);
-    
-    loadItems();
+
     loadTrashedItems();
   };
 
   const handlePermanentDelete = (item) => {
     if (confirm("Are you sure you want to permanently delete this item?")) {
-      const trashed = trashedItems.filter(t => t.id !== item.id);
+      const trashed = trashedItems.filter((t) => t.id !== item.id);
       localStorage.setItem("trashedItems", JSON.stringify(trashed));
-      loadTrashedItems();
-    }
-  };
-
-  const handleClearTrash = () => {
-    if (confirm("Are you sure you want to permanently delete all items in trash?")) {
-      localStorage.setItem("trashedItems", JSON.stringify([]));
       loadTrashedItems();
     }
   };
@@ -200,22 +346,28 @@ const ClosetPage = ({ onLogout }) => {
   };
 
   const getCategoryItems = (category) => {
-    return items.filter(item => item.category?.toLowerCase() === category.toLowerCase());
+    // Items may come from server with imageUrl/_id or from local wardrobeDB with image/name/id
+    return items.filter((item) => {
+      const cat = item.category || item?.metadata?.category || item.category; // try multiple places
+      if (cat) return cat.toLowerCase() === category.toLowerCase();
+      // fallback: try tags or naming heuristics
+      if (item.tags && item.tags.includes(category.toLowerCase())) return true;
+      return (item.category === undefined && item.image && item.name && false); // default no
+    });
   };
 
   const totalOutfits = JSON.parse(localStorage.getItem("savedOutfits"))?.length || 0;
-  const favoritesCount = items.filter(item => item.isFavorite).length;
+  const favoritesCount = items.filter((item) => item.isFavorite).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <ClosetHeader onMenuClick={handleMenuClick} onLogout={onLogout} />
-      
+
       <div className="flex gap-6 p-6 max-w-[1600px] mx-auto">
         {/* Left Section - Try-On Avatar */}
         <div className="w-[380px] flex-shrink-0">
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-purple-700 mb-4">Try-On Avatar</h2>
-            
             <div className="relative bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl h-[500px] flex items-center justify-center overflow-hidden">
               <div className="text-center">
                 <div className="w-48 h-48 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
@@ -291,15 +443,15 @@ const ClosetPage = ({ onLogout }) => {
               <div className="grid grid-cols-4 gap-4">
                 {getCategoryItems("upper").map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
                     className="bg-gray-50 rounded-2xl overflow-hidden cursor-move hover:shadow-lg transition-all group relative"
                   >
                     <div className="aspect-square overflow-hidden">
                       <img
-                        src={item.image || "/placeholder-shirt.jpg"}
-                        alt={item.name}
+                        src={item.imageUrl || item.image || "/placeholder-shirt.jpg"}
+                        alt={item.name || item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -312,7 +464,7 @@ const ClosetPage = ({ onLogout }) => {
                       </svg>
                     </button>
                     <div className="p-3">
-                      <p className="font-medium text-sm text-gray-800 truncate">{item.name}</p>
+                      <p className="font-medium text-sm text-gray-800 truncate">{item.name || item.title}</p>
                     </div>
                   </div>
                 ))}
@@ -337,15 +489,15 @@ const ClosetPage = ({ onLogout }) => {
               <div className="grid grid-cols-4 gap-4">
                 {getCategoryItems("lower").map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
                     className="bg-gray-50 rounded-2xl overflow-hidden cursor-move hover:shadow-lg transition-all group relative"
                   >
                     <div className="aspect-square overflow-hidden">
                       <img
-                        src={item.image || "/placeholder-pants.jpg"}
-                        alt={item.name}
+                        src={item.imageUrl || item.image || "/placeholder-pants.jpg"}
+                        alt={item.name || item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -358,7 +510,7 @@ const ClosetPage = ({ onLogout }) => {
                       </svg>
                     </button>
                     <div className="p-3">
-                      <p className="font-medium text-sm text-gray-800 truncate">{item.name}</p>
+                      <p className="font-medium text-sm text-gray-800 truncate">{item.name || item.title}</p>
                     </div>
                   </div>
                 ))}
@@ -383,15 +535,15 @@ const ClosetPage = ({ onLogout }) => {
               <div className="grid grid-cols-4 gap-4">
                 {getCategoryItems("bottom").map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id || item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
                     className="bg-gray-50 rounded-2xl overflow-hidden cursor-move hover:shadow-lg transition-all group relative"
                   >
                     <div className="aspect-square overflow-hidden">
                       <img
-                        src={item.image || "/placeholder-shoes.jpg"}
-                        alt={item.name}
+                        src={item.imageUrl || item.image || "/placeholder-shoes.jpg"}
+                        alt={item.name || item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -404,7 +556,7 @@ const ClosetPage = ({ onLogout }) => {
                       </svg>
                     </button>
                     <div className="p-3">
-                      <p className="font-medium text-sm text-gray-800 truncate">{item.name}</p>
+                      <p className="font-medium text-sm text-gray-800 truncate">{item.name || item.title}</p>
                     </div>
                   </div>
                 ))}
@@ -415,7 +567,7 @@ const ClosetPage = ({ onLogout }) => {
       </div>
 
       {/* Floating Trash Button */}
-      <button 
+      <button
         onClick={() => setShowTrashModal(true)}
         className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center hover:scale-110 transition-transform group"
       >
@@ -525,7 +677,7 @@ const ClosetPage = ({ onLogout }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Choose Image Style</h2>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => handleStyleSelect('original')}
