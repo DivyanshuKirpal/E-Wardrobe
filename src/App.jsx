@@ -1,76 +1,30 @@
-import React, { useState } from "react";
+// src/App.jsx (modified)
+import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AppContext } from "./Context/AppContext";
 
 import LandingPage from "./pages/LandingPage.jsx";
 import ClosetPage from "./pages/ClosetPage.jsx";
-import FavoritesPage from "./pages/FavoritesPage.jsx";
-import StatsPage from "./pages/StatsPage.jsx";
-import OutfitsPage from "./pages/OutfitPage.jsx";
-import JSBasicsDemo from "./pages/JSBasicsDemo.jsx";
+// ... other imports
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { token } = useContext(AppContext);
 
-  const handleLogin = () => setIsLoggedIn(true);
-  const handleLogout = () => setIsLoggedIn(false);
+  const handleLogin = () => {}; // not needed now
+  const handleLogout = () => {
+    // clear token + user via context
+    // import setToken/setUser via context if needed for logout button
+  };
 
   return (
     <Router>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <LandingPage
-              isLoggedIn={isLoggedIn}
-              onLogin={handleLogin}
-              onLogout={handleLogout}
-            />
-          }
-        />
-        <Route
-          path="/closet"
-          element={
-            isLoggedIn ? (
-              <ClosetPage onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/favorites"
-          element={
-            isLoggedIn ? (
-              <FavoritesPage onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/stats"
-          element={
-            isLoggedIn ? (
-              <StatsPage onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/outfits"
-          element={
-            isLoggedIn ? (
-              <OutfitsPage onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route
-          path="/js-demo"
-          element={<JSBasicsDemo />}
-        />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/closet" element={token ? <ClosetPage /> : <Navigate to="/" replace />} />
+        <Route path="/favorites" element={token ? <FavoritesPage /> : <Navigate to="/" replace />} />
+        <Route path="/stats" element={token ? <StatsPage /> : <Navigate to="/" replace />} />
+        <Route path="/outfits" element={token ? <OutfitsPage /> : <Navigate to="/" replace />} />
+        <Route path="/js-demo" element={<JSBasicsDemo />} />
       </Routes>
     </Router>
   );
