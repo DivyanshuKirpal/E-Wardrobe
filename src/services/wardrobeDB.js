@@ -1,21 +1,56 @@
-// Database service for wardrobe management
+// src/services/wardrobeDB.js
+// Database service for wardrobe management (fixed persistence)
+
 class WardrobeDB {
   constructor() {
     this.data = null;
-    this.loadData();
+    // Try to load saved data first so we don't overwrite user changes
+    this.loadFromLocalStorage();
+    // Then attempt to load default JSON only if there is no saved data
+    if (!this.data) {
+      this.loadData();
+    }
   }
 
   async loadData() {
     try {
       const response = await fetch('/src/data/wardrobe.json');
       this.data = await response.json();
+      // ensure structure
+      if (!this.data.users) this.data.users = [];
+      if (!this.data.categories) this.data.categories = ["upper", "lower", "bottom", "accessories"];
+      // persist the defaults so future reloads will pick them up
+      this.saveData();
     } catch (error) {
       console.error('Error loading wardrobe data:', error);
-      // Fallback to default data
+      // Fallback to default minimal structure
       this.data = {
         users: [],
         categories: ["upper", "lower", "bottom", "accessories"]
       };
+      this.saveData();
+    }
+  }
+
+  // Load from localStorage on initialization
+  loadFromLocalStorage() {
+    try {
+      const savedData = localStorage.getItem('wardrobe-data');
+      if (savedData) {
+        this.data = JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+      this.data = null;
+    }
+  }
+
+  // Save data (in a real app, this would be an API call)
+  saveData() {
+    try {
+      localStorage.setItem('wardrobe-data', JSON.stringify(this.data));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
     }
   }
 
@@ -53,11 +88,11 @@ class WardrobeDB {
     if (!user) return null;
 
     const newItem = {
-      id: Date.now(),
+      id: itemData.id || Date.now(),
       name: itemData.name || `Item ${category} ${user.wardrobe[category].length + 1}`,
       image: itemData.image || null,
       category,
-      dateAdded: new Date().toISOString().split('T')[0]
+      dateAdded: new Date().toISOString()
     };
 
     user.wardrobe[category].push(newItem);
@@ -92,7 +127,7 @@ class WardrobeDB {
       id: Date.now(),
       name: outfitData.name,
       items: outfitData.items || [],
-      dateCreated: new Date().toISOString().split('T')[0]
+      dateCreated: new Date().toISOString()
     };
 
     user.outfits.push(newOutfit);
@@ -124,7 +159,6 @@ class WardrobeDB {
     const user = this.getUserByUsername(username);
     if (!user) return [];
 
-    // Get all favorite items from all categories
     const allItems = [];
     Object.values(user.wardrobe).forEach(categoryItems => {
       allItems.push(...categoryItems);
@@ -153,35 +187,7 @@ class WardrobeDB {
 
     return stats;
   }
-
-  // Save data (in a real app, this would be an API call)
-  saveData() {
-    // In a real application, this would make an API call to save data
-    // For now, we'll just log that data would be saved
-    console.log('Data would be saved:', this.data);
-    
-    // Store in localStorage as a fallback
-    try {
-      localStorage.setItem('wardrobe-data', JSON.stringify(this.data));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  }
-
-  // Load from localStorage on initialization
-  loadFromLocalStorage() {
-    try {
-      const savedData = localStorage.getItem('wardrobe-data');
-      if (savedData) {
-        this.data = JSON.parse(savedData);
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
-  }
 }
 
-// Create a singleton instance
 const wardrobeDB = new WardrobeDB();
-
 export default wardrobeDB;
