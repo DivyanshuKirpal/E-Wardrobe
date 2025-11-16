@@ -1,19 +1,17 @@
 // src/Components/ClosetHeader.jsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../Context/AppContext.jsx";
 
-// NEW: import auth modals
+// Only import the login modal here as a fallback when NOT logged in.
+// We purposely do NOT import SignupModal here so signup lives on landing/header.
 import LoginModal from "./LoginModal.jsx";
-import SignupModal from "./SignupModal.jsx";
 
-const ClosetHeader = ({ onMenuClick, onLogout }) => {
+const ClosetHeader = ({ onMenuClick, onLogout: onLogoutProp }) => {
+  const { token, user, setToken, setUser } = useContext(AppContext);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  // NEW: states to control auth modals
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
-
+  const [showLogin, setShowLogin] = useState(false); // fallback for unauthenticated users
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -28,6 +26,26 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLogout = () => {
+    // clear context (AppProvider persists to localStorage)
+    setToken?.(null);
+    setUser?.(null);
+    // call parent callback too (if provided)
+    if (typeof onLogoutProp === "function") onLogoutProp();
+    // navigate to home after logout
+    navigate("/");
+  };
+
+  const avatarClick = () => {
+    if (token) {
+      // open profile dropdown for logged-in user
+      setIsMenuOpen((s) => !s);
+    } else {
+      // fallback: if someone is unauthenticated, show login modal
+      setShowLogin(true);
+    }
+  };
+
   return (
     <>
       <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -35,7 +53,7 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
           <div className="flex items-center justify-between">
             {/* Left - Logo and Hamburger */}
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -44,7 +62,7 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
                 </svg>
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl flex items-center justify-center shadow-lg">
                   <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
@@ -81,7 +99,7 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
               </button>
 
               {/* Add Button */}
-              <button 
+              <button
                 onClick={() => setShowAddModal(true)}
                 className="p-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-full hover:shadow-lg transition-all"
               >
@@ -91,11 +109,10 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
               </button>
 
               {/* Profile Avatar */}
-              {/* UPDATED: clicking avatar opens login modal (for unauthenticated user flow) */}
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={avatarClick}
                 className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-red-400 flex items-center justify-center shadow-md hover:shadow-lg transition-all"
-                title="Open account menu / sign in"
+                title={token ? `Signed in as ${user?.name || user?.email || "Account"}` : "Sign in"}
               >
                 <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
@@ -105,62 +122,38 @@ const ClosetHeader = ({ onMenuClick, onLogout }) => {
           </div>
         </div>
 
-        {/* Dropdown Menu */}
-        {isMenuOpen && (
-          <div ref={menuRef} className="absolute left-6 top-20 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+        {/* Profile dropdown ONLY shows when menu open (for logged-in users) */}
+        {isMenuOpen && token && (
+          <div ref={menuRef} className="absolute right-6 top-20 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+            <div className="p-4 border-b">
+              <div className="text-sm text-gray-600">Signed in as</div>
+              <div className="font-semibold">{user?.name || user?.email || "User"}</div>
+            </div>
+
             <button onClick={() => { onMenuClick("closet"); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-              </svg>
-              <span className="font-medium">My Closet</span>
+              My Closet
             </button>
-
             <button onClick={() => { onMenuClick("favorites"); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              <span className="font-medium">Favorites</span>
+              Favorites
             </button>
-
             <button onClick={() => { onMenuClick("stats"); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-              </svg>
-              <span className="font-medium">Statistics</span>
+              Statistics
             </button>
-
             <button onClick={() => { onMenuClick("outfits"); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              </svg>
-              <span className="font-medium">Outfits</span>
+              Outfits
             </button>
 
             <hr className="my-2" />
 
-            {/* NEW: quick access to Login / Signup in dropdown */}
-            <button onClick={() => { setShowLogin(true); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5v10z"/></svg>
-              <span className="font-medium">Login</span>
-            </button>
-            <button onClick={() => { setShowSignup(true); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 110 20 10 10 0 010-20zm1 10h4v2h-4v4h-2v-4H7v-2h4V8h2v4z"/></svg>
-              <span className="font-medium">Sign up</span>
-            </button>
-
-            <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-red-50 transition-colors flex items-center gap-3 text-red-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="font-medium">Logout</span>
+            <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full px-6 py-3 text-left hover:bg-red-50 transition-colors flex items-center gap-3 text-red-600">
+              Logout
             </button>
           </div>
         )}
-      </header>
 
-      {/* Render auth modals */}
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
-      <SignupModal isOpen={showSignup} onClose={() => setShowSignup(false)} />
+        {/* If NOT logged in and avatar clicked, we show the login modal fallback */}
+        <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      </header>
     </>
   );
 };
