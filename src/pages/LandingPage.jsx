@@ -1,3 +1,4 @@
+import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Components/Header.jsx";
 import StatsSection from "../Components/StatsSection.jsx";
@@ -6,18 +7,37 @@ import HowItWorksSection from "../Components/HowItWorksSection.jsx";
 import TestimonialsSection from "../Components/TestimonialsSection.jsx";
 import PricingSection from "../Components/PricingSection.jsx";
 import Footer from "../Components/Footer.jsx";
+import { AppContext } from "../Context/AppContext";
+
+/**
+ * LandingPage keeps existing layout.
+ * If you want login/register wired here, call your API and set token/user in AppContext:
+ * setToken(token); setUser(user)
+ */
 
 const LandingPage = ({ isLoggedIn, onLogin, onLogout }) => {
   const navigate = useNavigate();
+  const { setToken, setUser } = useContext(AppContext);
+
+  // Demo quick-login (for local dev/demo only)
+  const demoLogin = () => {
+    // If you want to wire real login, call /api/auth/login and then:
+    // setToken(response.token); setUser(response.user);
+    // For now keep demo behaviour to navigate to closet
+    onLogin?.();
+    navigate("/closet");
+  };
 
   const handleLogin = () => {
-    onLogin();
-    navigate("/closet");
+    demoLogin();
   };
 
   const handleClosetClick = () => {
     if (isLoggedIn) {
       navigate("/closet");
+    } else {
+      // encourage login
+      navigate("/login");
     }
   };
 
