@@ -1,0 +1,14 @@
+{
+  "name": "ewardrobe-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["ewardrobe", "wardrobe", "fashion"],
+  "author": "Your Name",
+  "license": "ISC",
+  "description": "E-Wardrobe Backend API"
+}
