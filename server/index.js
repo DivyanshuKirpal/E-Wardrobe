@@ -23,7 +23,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/items', itemsRoutes);
 app.use('/api/outfits', outfitsRoutes);
 
-const PORT = process.env.PORT || 5000;
+// Cartoon proxy route
+const cartoonProxy = require('./routes/cartoon_proxy');
+app.use('/api/cartoonize', cartoonProxy);
+
+const PORT = process.env.PORT || 5001;
 
 // MongoDB & server start
 mongoose.connect(process.env.MONGO_URI, {
@@ -35,6 +39,3 @@ mongoose.connect(process.env.MONGO_URI, {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 })
 .catch(err => console.error("MongoDB Error:", err));
-// near other route imports
-const cartoonProxy = require('/routes/cartoon_proxy');
-app.use('/api/cartoonize', cartoonProxy);

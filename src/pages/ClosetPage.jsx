@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import ClosetHeader from "../Components/ClosetHeader.jsx";
+import StatsWidget from "../Components/StatsWidget.jsx";
+import Toast from "../Components/Toast.jsx";
 import wardrobeDB from "../services/wardrobeDB.js";
-import HuggingFaceAPI from "../services/huggingFaceAPI.js";
+import cartoonAPI from "../services/cartoonAPI.js";
 import { AppContext } from "../Context/AppContext";
 
 /**
@@ -17,7 +19,7 @@ import { AppContext } from "../Context/AppContext";
 
 const ClosetPage = ({ onLogout }) => {
   const navigate = useNavigate();
-  const { token, items: ctxItems, setItems, fetchItems } = useContext(AppContext);
+  const { token, user, items: ctxItems, setItems, fetchItems } = useContext(AppContext);
 
   // Local state
   const [items, setLocalItems] = useState([]); // view-level items (mirrors ctxItems when logged in)
@@ -34,6 +36,9 @@ const ClosetPage = ({ onLogout }) => {
   const [processingProgress, setProcessingProgress] = useState("");
   const [showStyleModal, setShowStyleModal] = useState(false);
   const [styleResolver, setStyleResolver] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [toast, setToast] = useState(null);
+  const [previewItem, setPreviewItem] = useState(null); // For image preview modal
 
   // On mount: load local DB/trash; if token present, fetch server items
   useEffect(() => {
@@ -47,7 +52,7 @@ const ClosetPage = ({ onLogout }) => {
     }
     // sync ctxItems -> local view whenever ctxItems changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, user]); // Added user dependency to reload trash when user changes
 
   useEffect(() => {
     // If authenticated, show server items from context; otherwise use local items
@@ -74,11 +79,17 @@ const ClosetPage = ({ onLogout }) => {
   };
 
   // -----------------------
-  // Trash helpers (core fixes)
+  // Trash helpers (core fixes) - USER-SPECIFIC TRASH
   // -----------------------
+  const getTrashKey = () => {
+    // Use user ID for logged-in users, fallback to "PID18" for local
+    const userId = user?._id || user?.id || "PID18";
+    return `trashedItems_${userId}`;
+  };
+
   const loadTrashedItems = () => {
     try {
-      const saved = JSON.parse(localStorage.getItem("trashedItems")) || [];
+      const saved = JSON.parse(localStorage.getItem(getTrashKey())) || [];
       setTrashedItems(saved);
     } catch (err) {
       console.error("Failed to load trashed items:", err);
@@ -96,14 +107,15 @@ const ClosetPage = ({ onLogout }) => {
   // Move an item to trash (works for local and server items)
   const handleMoveToTrash = async (item) => {
     try {
-      // Save trashed record locally (so trash persists across reloads)
-      const current = JSON.parse(localStorage.getItem("trashedItems")) || [];
+      // Save trashed record locally (so trash persists across reloads) - USER-SPECIFIC
+      const trashKey = getTrashKey();
+      const current = JSON.parse(localStorage.getItem(trashKey)) || [];
       const trashedRecord = {
         ...item,
         trashedAt: new Date().toISOString()
       };
       current.push(trashedRecord);
-      localStorage.setItem("trashedItems", JSON.stringify(current));
+      localStorage.setItem(trashKey, JSON.stringify(current));
       setTrashedItems(current);
 
       // Remove from local wardrobeDB (if local item)
@@ -128,8 +140,9 @@ const ClosetPage = ({ onLogout }) => {
   // If item came from server you'd want to re-upload or call server to restore.
   const handleRestoreItem = (item) => {
     try {
+      const trashKey = getTrashKey();
       const remaining = (trashedItems || []).filter(t => (t._id || t.id) !== (item._id || item.id));
-      localStorage.setItem("trashedItems", JSON.stringify(remaining));
+      localStorage.setItem(trashKey, JSON.stringify(remaining));
       setTrashedItems(remaining);
 
       const username = "PID18";
@@ -154,8 +167,9 @@ const ClosetPage = ({ onLogout }) => {
   const handlePermanentDelete = (item) => {
     try {
       if (!confirm("Are you sure you want to permanently delete this item?")) return;
+      const trashKey = getTrashKey();
       const remaining = (trashedItems || []).filter(t => (t._id || t.id) !== (item._id || item.id));
-      localStorage.setItem("trashedItems", JSON.stringify(remaining));
+      localStorage.setItem(trashKey, JSON.stringify(remaining));
       setTrashedItems(remaining);
       // If item exists in local DB remove it (safety)
       const username = "PID18";
@@ -171,7 +185,8 @@ const ClosetPage = ({ onLogout }) => {
   const handleClearTrash = () => {
     try {
       if (!confirm("Are you sure you want to permanently delete all items in trash?")) return;
-      localStorage.setItem("trashedItems", JSON.stringify([]));
+      const trashKey = getTrashKey();
+      localStorage.setItem(trashKey, JSON.stringify([]));
       setTrashedItems([]);
       // optionally: clean local DB or instruct server to purge trash records if you implement server trash
     } catch (err) {
@@ -273,7 +288,7 @@ const ClosetPage = ({ onLogout }) => {
     }
   };
 
-  // AI flow with style selection (kept)
+  // Simplified style selection - only cartoon or original
   const showStyleSelection = () => {
     setShowStyleModal(true);
     return new Promise((resolve) => {
@@ -318,28 +333,21 @@ const ClosetPage = ({ onLogout }) => {
           }
 
           setIsProcessing(true);
-          setProcessingProgress(`Converting to ${styleChoice}...`);
+          setProcessingProgress(`Converting to ${styleChoice} style...`);
 
           try {
             let processedDataUrl;
-            switch (styleChoice) {
-              case "cartoon":
-                processedDataUrl = await HuggingFaceAPI.transformToCartoon(file);
-                break;
-              case "anime":
-                processedDataUrl = await HuggingFaceAPI.transformToAnime(file);
-                break;
-              case "remove-bg":
-                processedDataUrl = await HuggingFaceAPI.removeBackground(file);
-                break;
-              default:
-                processedDataUrl = originalImage;
+            if (styleChoice === "cartoon") {
+              processedDataUrl = await cartoonAPI.transformToCartoon(file);
+            } else {
+              processedDataUrl = originalImage;
             }
 
             await saveToWardrobe(category, processedDataUrl, file.name);
+            setToast({ message: `Item added to ${category}!`, type: "success" });
           } catch (error) {
-            console.error("AI processing failed:", error);
-            alert("AI processing failed. Saving original image instead.");
+            console.error("Cartoonization failed:", error);
+            setToast({ message: "Cartoonization failed. Saving original.", type: "warning" });
             await saveToWardrobe(category, originalImage, file.name);
           } finally {
             setIsProcessing(false);
@@ -365,7 +373,9 @@ const ClosetPage = ({ onLogout }) => {
       const outfits = JSON.parse(localStorage.getItem("savedOutfits")) || [];
       outfits.push({ id: Date.now(), items: selectedOutfitItems, createdAt: new Date().toISOString() });
       localStorage.setItem("savedOutfits", JSON.stringify(outfits));
-      alert("Outfit saved successfully!");
+      setToast({ message: "Outfit saved successfully!", type: "success" });
+    } else {
+      setToast({ message: "Add items to create an outfit", type: "info" });
     }
   };
 
@@ -373,9 +383,19 @@ const ClosetPage = ({ onLogout }) => {
     return (token ? (ctxItems || []) : (items || []))
       .filter(item => {
         const cat = item.category || item?.metadata?.category;
-        if (cat) return cat.toLowerCase() === category.toLowerCase();
-        if (item.tags && item.tags.includes(category.toLowerCase())) return true;
-        return false;
+        let matchesCategory = false;
+        if (cat) matchesCategory = cat.toLowerCase() === category.toLowerCase();
+        if (item.tags && item.tags.includes(category.toLowerCase())) matchesCategory = true;
+        
+        // Apply search filter
+        if (searchQuery && matchesCategory) {
+          const query = searchQuery.toLowerCase();
+          const name = (item.name || item.title || "").toLowerCase();
+          const tags = (item.tags || []).join(" ").toLowerCase();
+          return name.includes(query) || tags.includes(query);
+        }
+        
+        return matchesCategory;
       });
   };
 
@@ -391,7 +411,12 @@ const ClosetPage = ({ onLogout }) => {
   // Render
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <ClosetHeader onMenuClick={(p) => navigate(`/${p}`)} onLogout={onLogout} />
+      <ClosetHeader 
+        onMenuClick={(p) => navigate(`/${p}`)} 
+        onLogout={onLogout}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       <div className="flex gap-6 p-6 max-w-[1600px] mx-auto">
         {/* Left Section */}
@@ -410,24 +435,27 @@ const ClosetPage = ({ onLogout }) => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button onClick={handleReset} className="flex-1 ...">Reset</button>
-              <button onClick={handleSaveOutfit} className="flex-1 ...">Save Outfit</button>
+              <button 
+                onClick={handleReset} 
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+              >
+                Reset
+              </button>
+              <button 
+                onClick={handleSaveOutfit} 
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all font-medium"
+              >
+                Save Outfit
+              </button>
             </div>
+          </div>
 
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-700">{(token ? (ctxItems || []) : (items || [])).length}</div>
-                <div className="text-sm text-gray-500 mt-1">Items</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-700">{totalOutfits}</div>
-                <div className="text-sm text-gray-500 mt-1">Outfits</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-700">{favoritesCount}</div>
-                <div className="text-sm text-gray-500 mt-1">Favorites</div>
-              </div>
-            </div>
+          {/* Stats Widget */}
+          <div className="mt-6">
+            <StatsWidget 
+              items={token ? (ctxItems || []) : (items || [])} 
+              trashedCount={trashedItems.length}
+            />
           </div>
         </div>
 
@@ -453,12 +481,28 @@ const ClosetPage = ({ onLogout }) => {
 
                 <div className="grid grid-cols-4 gap-4">
                   {getCategoryItems(cat).map((item) => (
-                    <div key={item._id || item.id} draggable onDragStart={(e) => handleDragStart(e, item)} className="bg-gray-50 rounded-2xl overflow-hidden cursor-move hover:shadow-lg transition-all group relative">
-                      <div className="aspect-square overflow-hidden">
+                    <div key={item._id || item.id} draggable onDragStart={(e) => handleDragStart(e, item)} className="bg-gray-50 rounded-2xl overflow-hidden cursor-move hover:shadow-xl transition-all group relative">
+                      <div className="aspect-square overflow-hidden relative">
                         <img src={item.imageUrl || item.image || "/placeholder-shirt.jpg"} alt={item.name || item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        {/* Quick preview overlay with Preview button */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}
+                            className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-colors shadow-lg flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                            Preview
+                          </button>
+                          <div className="text-white text-xs text-center px-3">
+                            <div className="font-semibold">Drag to try on</div>
+                            {item.createdAt && <div className="text-white/80">Added {new Date(item.createdAt).toLocaleDateString()}</div>}
+                          </div>
+                        </div>
                       </div>
-                      <button onClick={() => handleMoveToTrash(item)} className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                      <button onClick={() => handleMoveToTrash(item)} className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg hover:bg-red-600 z-10">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                       </button>
                       <div className="p-3">
                         <p className="font-medium text-sm text-gray-800 truncate">{item.name || item.title}</p>
@@ -483,7 +527,7 @@ const ClosetPage = ({ onLogout }) => {
 
       {/* Trash Modal */}
       {showTrashModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800">Trash</h2>
@@ -508,17 +552,28 @@ const ClosetPage = ({ onLogout }) => {
                 <div className="grid grid-cols-3 gap-4">
                   {trashedItems.map((item) => (
                     <div key={item._id || item.id} className="bg-gray-50 rounded-2xl overflow-hidden relative group">
-                      <div className="aspect-square overflow-hidden">
-                        <img src={item.image || item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                      <div className="aspect-square overflow-hidden cursor-pointer" onClick={() => setPreviewItem(item)}>
+                        <img src={item.image || item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                       </div>
                       <div className="p-3">
                         <p className="font-medium text-sm text-gray-800 truncate">{item.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{new Date(item.trashedAt).toLocaleString()}</p>
                       </div>
 
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
-                        <button onClick={() => handleRestoreItem(item)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium">Restore</button>
-                        <button onClick={() => handlePermanentDelete(item)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium">Delete</button>
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}
+                          className="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                          </svg>
+                          Preview
+                        </button>
+                        <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); handleRestoreItem(item); }} className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs font-medium">Restore</button>
+                          <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(item); }} className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-xs font-medium">Delete</button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -531,7 +586,7 @@ const ClosetPage = ({ onLogout }) => {
 
       {/* Processing Modal */}
       {isProcessing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
           <div className="bg-white rounded-2xl p-8 max-w-md">
             <div className="flex flex-col items-center">
               <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -542,20 +597,113 @@ const ClosetPage = ({ onLogout }) => {
         </div>
       )}
 
-      {/* Style Selection Modal */}
+      {/* Style Selection Modal - Simplified to Cartoon or Original */}
       {showStyleModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Choose Image Style</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Choose Image Style</h2>
+            <p className="text-gray-600 text-sm mb-6">Transform your image into a fun cartoon style using AI</p>
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => handleStyleSelect('original')} className="p-6 border-2 rounded-xl">Original</button>
-              <button onClick={() => handleStyleSelect('cartoon')} className="p-6 border-2 rounded-xl">Cartoon</button>
-              <button onClick={() => handleStyleSelect('anime')} className="p-6 border-2 rounded-xl">Anime</button>
-              <button onClick={() => handleStyleSelect('remove-bg')} className="p-6 border-2 rounded-xl">Remove BG</button>
+              <button 
+                onClick={() => handleStyleSelect('original')} 
+                className="p-6 border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group"
+              >
+                <div className="text-4xl mb-2">📷</div>
+                <div className="font-semibold text-gray-800 group-hover:text-purple-600">Original</div>
+                <div className="text-xs text-gray-500 mt-1">Keep as is</div>
+              </button>
+              <button 
+                onClick={() => handleStyleSelect('cartoon')} 
+                className="p-6 border-2 border-purple-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group bg-purple-50"
+              >
+                <div className="text-4xl mb-2">🎨</div>
+                <div className="font-semibold text-purple-600">Cartoon</div>
+                <div className="text-xs text-gray-500 mt-1">Bit emoji style</div>
+              </button>
             </div>
-            <button onClick={() => handleStyleSelect('original')} className="w-full mt-6 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl">Cancel</button>
+            <button 
+              onClick={() => handleStyleSelect('original')} 
+              className="w-full mt-6 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+            >
+              Cancel
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[300] p-4" onClick={() => setPreviewItem(null)}>
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button 
+              onClick={() => setPreviewItem(null)}
+              className="absolute -top-12 right-0 w-10 h-10 bg-white text-gray-800 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center shadow-lg z-10"
+            >
+              ✕
+            </button>
+            
+            {/* Image container */}
+            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative">
+                <img 
+                  src={previewItem.imageUrl || previewItem.image} 
+                  alt={previewItem.name || previewItem.title}
+                  className="w-full h-auto max-h-[80vh] object-contain"
+                />
+              </div>
+              
+              {/* Item details */}
+              <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                      {previewItem.name || previewItem.title}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-medium capitalize">
+                        {previewItem.category}
+                      </span>
+                      {previewItem.createdAt && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                          </svg>
+                          Added {new Date(previewItem.createdAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        setPreviewItem(null);
+                        handleMoveToTrash(previewItem);
+                      }}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
       )}
     </div>
   );

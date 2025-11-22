@@ -55,7 +55,7 @@ const SignupModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.35)" }}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
       <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Create account</h3>
