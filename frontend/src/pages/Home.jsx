@@ -47,7 +47,7 @@ export default function Home() {
                 Get Started Free
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
-              <Link to="/demo" className="btn-secondary inline-flex items-center justify-center">
+              <Link to="/" className="btn-secondary inline-flex items-center justify-center">
                 Watch Demo
               </Link>
             </div>

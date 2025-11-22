@@ -10,17 +10,34 @@ const generateToken = (id) => {
 // Register user
 export const register = async (req, res) => {
   try {
+    console.log('Register request received:', req.body);
+    
     const { name, email, password } = req.body;
 
+    // Validate input
+    if (!name || !email || !password) {
+      console.log('Missing required fields');
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, and password'
+      });
+    }
+
+    // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
+      console.log('User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User already exists'
       });
     }
 
+    // Create user
+    console.log('Creating new user...');
     const user = await User.create({ name, email, password });
+    console.log('User created successfully:', user._id);
+    
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -34,9 +51,14 @@ export const register = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('=== REGISTER ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('=====================');
+    
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Server error during registration'
     });
   }
 };

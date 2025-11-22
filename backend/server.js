@@ -48,9 +48,13 @@ app.use((req, res) => {
   });
 });
 
-// Error handling middleware
+// Error handling middleware with detailed logging
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
+  console.error('=== ERROR DETAILS ===');
+  console.error('Message:', err.message);
+  console.error('Stack:', err.stack);
+  console.error('====================');
+  
   res.status(err.statusCode || 500).json({ 
     success: false, 
     message: err.message || 'Server Error',

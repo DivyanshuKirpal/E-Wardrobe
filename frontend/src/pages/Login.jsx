@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,16 +10,14 @@ export default function Login() {
     email: '',
     password: ''
   });
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // API call will be added later
-      toast.success('Login successful!');
+    const result = await login(formData);
+    if (result.success) {
       navigate('/dashboard');
-    } catch (error) {
-      toast.error('Login failed. Please try again.');
     }
   };
 

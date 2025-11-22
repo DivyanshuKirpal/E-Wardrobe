@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,6 +14,7 @@ export default function Signup() {
     confirmPassword: ''
   });
   const { register } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,11 +24,15 @@ export default function Signup() {
       return;
     }
 
-    await register({
+    const result = await register({
       name: formData.name,
       email: formData.email,
       password: formData.password
     });
+    
+    if (result.success) {
+      navigate('/dashboard');
+    }
   };
 
   return (

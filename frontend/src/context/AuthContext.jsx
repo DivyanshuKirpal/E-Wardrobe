@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -8,7 +7,6 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -39,7 +37,6 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       setUser(res.data.user);
       toast.success('Registration successful!');
-      navigate('/dashboard');
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
@@ -55,7 +52,6 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       setUser(res.data.user);
       toast.success('Login successful!');
-      navigate('/dashboard');
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
@@ -69,7 +65,6 @@ export const AuthProvider = ({ children }) => {
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
     toast.success('Logged out successfully');
-    navigate('/');
   };
 
   return (
